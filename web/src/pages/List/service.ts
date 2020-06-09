@@ -9,7 +9,7 @@ export async function query(params?: TableListParams) {
 
 export async function remove(params: { key: number[] }) {
   return request('/api/delete', {
-    method: 'DELETE',
+    method: 'POST',
     data: {
       ...params,
     },
@@ -35,8 +35,36 @@ export async function update(params: TableListParams) {
 }
 
 
-export async function forgive(params: {ids: [number], status: number}) {
+export async function forgive(params: any) {
   return request('/api/updateMany', {
+    method: 'POST',
+    data: {
+      ...params,
+    },
+  });
+}
+
+export async function orc(params:any) {
+  console.log(params);
+  return request('/api/orc', {
+    method: 'POST',
+    data: params,
+  });
+}
+
+
+export async function filterAdd(params:any) {
+  return request('/api/filter/add', {
+    method: 'POST',
+    data: {
+      ...params,
+    },
+  });
+}
+
+
+export async function findNameMany(params:any) {
+  return request('/api/findNameMany', {
     method: 'POST',
     data: {
       ...params,

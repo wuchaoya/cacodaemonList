@@ -2,12 +2,15 @@ import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Divider, Dropdown, Menu, message, Input } from 'antd';
 import React, { useState, useRef } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
+// @ts-ignore
 import ProTable, { ProColumns, ActionType } from '@ant-design/pro-table';
 
 import CreateForm from './components/CreateForm';
-import UpdateForm, { FormValueType } from './components/UpdateForm';
+import UpdateForm from './components/UpdateForm';
+import ImgCreate from './components/ImgCreate';
+
 import { TableListItem } from './data.d';
-import { query, update, add, remove,forgive } from './service';
+import { query, update, add, remove,forgive,orc, filterAdd , findNameMany } from './service';
 
 /**
  * 添加节点
@@ -31,21 +34,17 @@ const handleAdd = async (fields: TableListItem) => {
  * 更新节点
  * @param fields
  */
-const handleUpdate = async (fields: FormValueType) => {
-  const hide = message.loading('正在配置');
+const handleUpdate = async (fields: any) => {
+  const hide = message.loading('正在更新');
   try {
-    await update({
-      name: fields.name,
-      desc: fields.desc,
-      _id: fields._id,
-    });
+    await update({...fields});
     hide();
 
-    message.success('配置成功');
+    message.success('更新成功');
     return true;
   } catch (error) {
     hide();
-    message.error('配置失败请重试！');
+    message.error('更新失败请重试！');
     return false;
   }
 };
@@ -60,6 +59,7 @@ const handleRemove = async (selectedRows: TableListItem[]) => {
   try {
     await remove({
       // @ts-ignore
+      // eslint-disable-next-line no-underscore-dangle
       ids: selectedRows.map((row) => row._id),
     });
     hide();
@@ -72,12 +72,13 @@ const handleRemove = async (selectedRows: TableListItem[]) => {
   }
 };
 
-const handleForgive = async (selectedRows: TableListItem[]) => {
+const handleForgive = async(selectedRows: (((prevState: {}) => {}) | {})[]) => {
   const hide = message.loading('正在更新');
   if (!selectedRows) return true;
   try {
+    // @ts-ignore
     await forgive({
-      // @ts-ignore
+      // eslint-disable-next-line no-underscore-dangle
       ids: selectedRows.map((row) => row._id),
       status: 1
     });
@@ -91,11 +92,41 @@ const handleForgive = async (selectedRows: TableListItem[]) => {
   }
 };
 
+const handleOrc = async (file: any) => {
+  console.log(file);
+  try {
+    await orc(file);
+  } catch (error) {
+    return false;
+  }
+  return false
+};
+
+const getNameMany = async (names: [string]) => {
+  return await findNameMany({names})
+}
+
 
 const TableList: React.FC<{}> = () => {
   const [createModalVisible, handleModalVisible] = useState<boolean>(false);
+  const [createImgModalVisible, handleImgModalVisible] = useState<boolean>(false);
   const [updateModalVisible, handleUpdateModalVisible] = useState<boolean>(false);
   const [stepFormValues, setStepFormValues] = useState({});
+  const [sourceSelectedKeys, setSourceSelectedKeys] = useState([])
+  
+  const [dataType, setDataType] = useState(0);
+  
+  const request =  async (params: any) => {
+    if (dataType === 0) {
+      return  await query({ ...params })
+    } else {
+     const respone = await getNameMany(sourceSelectedKeys)
+      setSourceSelectedKeys([])
+      setDataType(0)
+      return respone;
+    }
+  }
+  
   const actionRef = useRef<ActionType>();
   const columns: ProColumns<TableListItem>[] = [
     {
@@ -135,7 +166,7 @@ const TableList: React.FC<{}> = () => {
       sorter: true,
       valueType: 'dateTime',
       hideInForm: true,
-      renderFormItem: (item, { defaultRender, ...rest }, form) => {
+      renderFormItem: (item: any, {defaultRender, ...rest}: any, form: { getFieldValue: (arg0: string) => void; }) => {
         const status = form.getFieldValue('status');
         if (`${status}` === '0') {
           return false;
@@ -150,7 +181,7 @@ const TableList: React.FC<{}> = () => {
       title: '操作',
       dataIndex: 'option',
       valueType: 'option',
-      render: (_, record) => (
+      render: (_: any, record: React.SetStateAction<{}>) => (
         <>
           <a
             onClick={() => {
@@ -161,12 +192,14 @@ const TableList: React.FC<{}> = () => {
             修改
           </a>
           <Divider type="vertical" />
-          <a href="">原谅</a>
+          <a onClick={() => {
+            handleForgive([record])
+            actionRef.current.reload();
+          }}>原谅</a>
         </>
       ),
     },
   ];
-
   return (
     <PageContainer>
       <ProTable<TableListItem>
@@ -176,6 +209,9 @@ const TableList: React.FC<{}> = () => {
         toolBarRender={(action, { selectedRows }) => [
           <Button type="primary" onClick={() => handleModalVisible(true)}>
             <PlusOutlined /> 新建
+          </Button>,
+          <Button type="primary" onClick={() => handleImgModalVisible(true)}>
+            <PlusOutlined /> 图片识别
           </Button>,
           selectedRows && selectedRows.length > 0 && (
             <Dropdown
@@ -212,7 +248,7 @@ const TableList: React.FC<{}> = () => {
             </span>
           </div>
         )}
-        request={(params, sorter, filter) => query({ ...params, sorter, filter })}
+        request={request}
         columns={columns}
         rowSelection={{}}
       />
@@ -233,24 +269,35 @@ const TableList: React.FC<{}> = () => {
           rowSelection={{}}
         />
       </CreateForm>
+      <ImgCreate
+        handleOrc={handleOrc}
+        handleOk={async (targetSelectedKeys: [string],sourceSelectedKeys: [string]) => {
+         
+         await filterAdd({ names: targetSelectedKeys.map(name => ({name})) })
+          handleImgModalVisible(false)
+          setSourceSelectedKeys(sourceSelectedKeys)
+          setDataType(1)
+          actionRef.current.reload();
+  
+        }}
+        onCancel={() => handleImgModalVisible(false)}
+        modalVisible={createImgModalVisible}
+      />
       {stepFormValues && Object.keys(stepFormValues).length ? (
         <UpdateForm
-          onSubmit={async (value) => {
-            const success = await handleUpdate(value);
-            if (success) {
-              handleUpdateModalVisible(false);
-              setStepFormValues({});
-              if (actionRef.current) {
-                actionRef.current.reload();
-              }
-            }
+          data={stepFormValues}
+          onOk={() =>{
+            handleUpdate(stepFormValues)
+            handleUpdateModalVisible(false);
+            setStepFormValues({});
+            actionRef.current.reload();
           }}
           onCancel={() => {
             handleUpdateModalVisible(false);
             setStepFormValues({});
           }}
+          update={setStepFormValues}
           updateModalVisible={updateModalVisible}
-          values={stepFormValues}
         />
       ) : null}
     </PageContainer>

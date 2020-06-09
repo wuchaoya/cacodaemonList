@@ -1,98 +1,54 @@
-import React, { useState } from 'react';
-import { Form, Button, DatePicker, Input, Modal, Radio, Select, Steps } from 'antd';
+import React from 'react';
+import {Input, InputNumber, Row, Col, Modal } from 'antd';
 
-import { TableListItem } from '../data.d';
-
-export interface FormValueType extends Partial<TableListItem> {
-  target?: string;
-  template?: string;
-  type?: string;
-  time?: string;
-  frequency?: string;
-}
-
-export interface UpdateFormProps {
-  onCancel: (flag?: boolean, formVals?: FormValueType) => void;
-  onSubmit: (values: FormValueType) => void;
+interface CreateFormProps {
   updateModalVisible: boolean;
-  values: Partial<TableListItem>;
-}
-const FormItem = Form.Item;
-const { Step } = Steps;
-const { TextArea } = Input;
-const { Option } = Select;
-const RadioGroup = Radio.Group;
-
-export interface UpdateFormState {
-  formVals: FormValueType;
-  currentStep: number;
+  onCancel: () => void;
+  onOk: () => void;
+  update: (e: any) => void;
+  data: any
 }
 
-const formLayout = {
-  labelCol: { span: 7 },
-  wrapperCol: { span: 13 },
-};
 
-const UpdateForm: React.FC<UpdateFormProps> = (props) => {
-  const [formVals, setFormVals] = useState<FormValueType>({
-    name: props.values.name,
-    desc: props.values.desc,
-    key: props.values.key,
-    target: '0',
-    template: '0',
-    type: '1',
-    time: '',
-    frequency: 'month',
-  });
-
-  const [currentStep, setCurrentStep] = useState<number>(0);
-
-  const [form] = Form.useForm();
-
-  const {
-    onSubmit: handleUpdate,
-    onCancel: handleUpdateModalVisible,
-    updateModalVisible,
-    values,
-  } = props;
-
-  const forward = () => setCurrentStep(currentStep + 1);
-
-  const backward = () => setCurrentStep(currentStep - 1);
-
-  const handleNext = async () => {
-    const fieldsValue = await form.validateFields();
-
-    setFormVals({ ...formVals, ...fieldsValue });
-
-    if (currentStep < 2) {
-      forward();
-    } else {
-      handleUpdate(formVals);
-    }
-  };
-
-  const renderContent = () => {
-   
-    return (
-      <>
-        <div>
-        
-        </div>
-      </>
-    );
-  };
-
-
+const UpdateForm: React.FC<CreateFormProps> = (props) => {
+  const { updateModalVisible, onCancel, data, update,onOk } = props;
+  
+  const onChangeMetNumber = (v: any) => {
+    update({...data,metNumber: v})
+  }
+  
+  const onChangeDesc = (e: any) => {
+    update({...data,desc:  e.target.value})
+  }
+  
   return (
     <Modal
-      width={640}
-      bodyStyle={{ padding: '32px 40px 48px' }}
       destroyOnClose
-      title="更新"
+      title='修改'
       visible={updateModalVisible}
-      onCancel={() => handleUpdateModalVisible()}
+      onCancel={() => onCancel()}
+      onOk={() => onOk()}
     >
+     <Row gutter={[24,24]}>
+       <Col>名称:</Col>
+       <Col><Input disabled value={data.name} /></Col>
+     </Row>
+      <Row gutter={[24,24]}>
+        <Col>描述:</Col>
+        <Col>
+          <InputNumber onChange={onChangeMetNumber} value={data.metNumber}  />
+        </Col>
+      </Row>
+      <Row gutter={[24,24]}>
+        <Col>描述:</Col>
+        <Col>
+          <Input.TextArea
+            onChange={onChangeDesc}
+            value={data.desc}
+            autoSize={{ minRows: 3, maxRows: 5 }}
+          />
+        </Col>
+      </Row>
     
     </Modal>
   );

@@ -38,6 +38,10 @@ export default defineConfig({
       path: '/',
       component: './List',
     },
+    {
+      path: '/test',
+      component: './ImageToText',
+    },
     
     {
       component: './404',
