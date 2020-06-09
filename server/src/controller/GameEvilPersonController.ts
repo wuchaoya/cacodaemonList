@@ -20,6 +20,11 @@ export default class GameEvilPersonController {
     ctx.body = response;
   }
   
+  public static async findNameMany (ctx: Context) {
+    const response = await GameEvilPersonHelper.findNameMany(ctx.request.body);
+    ctx.body = response;
+  }
+  
   public static async update (ctx: Context) {
     const response = await GameEvilPersonHelper.update(ctx.request.body);
     ctx.body = response;

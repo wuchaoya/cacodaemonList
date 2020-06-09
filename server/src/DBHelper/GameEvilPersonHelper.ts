@@ -15,7 +15,6 @@ export default class InfoHelper {
   public static add = async(data: any) => {
     
     const info = await GameEvilPerson.findOne({name: data.name})
-    global.console.log(info);
     if(info) {
       return {message: '添加失败，已经存在', code: 201}
     }
@@ -31,24 +30,24 @@ export default class InfoHelper {
   public static find = async(data: any) => {
     
     // tslint:disable-next-line:prefer-const
-    let query: {name? : string, desc ?: string} = {}
+    let query: {name? : string, desc ?: string, metNumber? : number,status?: number} = {}
     if (data.name) {query.name = data.name}
     if (data.desc) {query.desc = data.desc}
+    if (data.metNumber) {query.metNumber = data.metNumber}
+    if (data.status) {query.status = data.status}
+  
     const respone: any = await GameEvilPerson
     .find(query)
-    .where('metNumber').gt(-1)
-    .where('status').in(data.status ? [data.status] : [0, 1])
     .skip(Number(data.pageSize) * Number(data.current) - Number(data.pageSize))
     .limit(Number(data.pageSize))
-    .sort({metNumber: 1})
-    
+    .sort({metNumber: -1})
     return respone ? {message: '成功', code: 200, data: respone} : {code: 201}
     
   }
   
   public static update = async(data: any) => {
     
-    const respone = await GameEvilPerson.findByIdAndUpdate(data.id, {$set: {...data}})
+    const respone = await GameEvilPerson.findByIdAndUpdate(data._id, {$set: {...data}})
     return respone ? {message: '成功', code: 200, data: respone} : {code: 201}
     
   }
@@ -71,5 +70,16 @@ export default class InfoHelper {
     })
     return respone ? {message: '成功', code: 200, data: respone} : {code: 201}
   }
+  
+  public static findNameMany = async(data: any) => {
+  
+    const respone: any = await GameEvilPerson
+    .find({name: { $in:data.names }})
+  
+    return respone ? {message: '成功', code: 200, data: respone} : {code: 201}
+  
+  }
+  
+  
   
 }

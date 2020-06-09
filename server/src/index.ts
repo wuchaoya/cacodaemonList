@@ -3,12 +3,12 @@
  */
 
 import * as koa from 'koa';
-import * as koaBodyparser from 'koa-bodyparser';
+import koaBody = require('koa-body');
+import serve = require("koa-static")
 import * as cors from 'koa2-cors';
-import * as mongoDB from './mongoDB';
-
 import path = require("path");
 import Logger = require('./config/logger');
+import * as mongoDB from './mongoDB';
 import router from './router';
 
 const app = new koa();
@@ -27,8 +27,10 @@ mongoDB.connect();
  app
 
   .use(cors(heade))
-
-  .use(koaBodyparser())
+ 
+  .use(serve(path.join(__dirname, '/public')))
+ 
+  .use(koaBody({multipart: true}))
   
   .use(router.routes())
 

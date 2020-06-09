@@ -7,6 +7,8 @@ import { Path } from '../config/mongodbConfig';
 
 (mongoose as any).Promise = global.Promise;
 
+mongoose.set('useFindAndModify', false);
+
 export const DB = mongoose;
 
 export const { Schema } = DB;
